@@ -1,0 +1,10 @@
+key,metric,n,median_s,min_s,max_s,latex_cell
+app_standby_public,final_app_standby_ms,30,65.500,65.251,65.575,"\(65.500\ [65.251,65.575]\)"
+minimum_latency_public,final_minimum_latency_ms,30,50.495,50.252,50.556,"\(50.495\ [50.252,50.556]\)"
+job_age_upper,job_age_conservative_upper_ms,30,50.610,50.370,50.680,"\(50.610\ [50.370,50.680]\)"
+union_upper,union_reference_upper_ms,30,20.415,20.170,20.460,"\(20.415\ [20.170,20.460]\)"
+additive_upper,additive_reference_upper_ms,30,36.000,35.750,36.070,"\(36.000\ [35.750,36.070]\)"
+app_standby_minus_age_upper,app_standby_minus_age_upper_ms,30,14.884,14.848,14.916,"\(14.884\ [14.848,14.916]\)"
+app_standby_minus_minimum_latency,app_standby_minus_minimum_latency_ms,30,15.001,14.985,15.034,"\(15.001\ [14.985,15.034]\)"
+minimum_latency_minus_additive_upper,minimum_latency_minus_additive_upper_ms,30,14.499,14.477,14.525,"\(14.499\ [14.477,14.525]\)"
+updater_reconstruction_residual,public_minus_exact_prediction_ms,30,0.000,0.000,0.000,"\(0.000\ [0.000,0.000]\)"

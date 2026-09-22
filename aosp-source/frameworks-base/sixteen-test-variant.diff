@@ -1,0 +1,637 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: HotMobile artifact <artifact@example.invalid>
+Date: Sat, 1 Aug 2026 00:00:00 +0000
+Subject: [TEST ONLY] JobStatus: characterize same-public-reason accounting
+
+Target revision: 94b4c163b7dfe5ce3607f7bb8456f9573f7de57d
+Execution status: EXECUTED 94b4c163b7dfe5ce3607f7bb8456f9573f7de57d 2026-08-04T18:29:40Z
+
+---
+ .../server/job/controllers/JobStatusTest.java      | 606 +++++++++++++++++++++++++++
+ 1 file changed, 606 insertions(+)
+
+diff --git a/services/tests/mockingservicestests/src/com/android/server/job/controllers/JobStatusTest.java b/services/tests/mockingservicestests/src/com/android/server/job/controllers/JobStatusTest.java
+--- a/services/tests/mockingservicestests/src/com/android/server/job/controllers/JobStatusTest.java
++++ b/services/tests/mockingservicestests/src/com/android/server/job/controllers/JobStatusTest.java
+@@ -1749,6 +1749,429 @@
+         assertEquals(3000, batteryNotLowDuration.getDuration().toMillis());
+     }
+ 
++    @EnableFlags({
++            android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API
++    })
++    @Test
++    public void testPendingReasonStats_samePublicReasonChargingFirstCloseCharacterization() {
++        final TestClock testClock = new TestClock();
++        JobSchedulerService.sElapsedRealtimeClock = testClock;
++        final JobStatus job = createRestrictedAppStandbyJob(testClock);
++        final long[] observed = new long[4];
++
++        assertEquals(0, getPendingReasonDuration(job,
++                JobScheduler.PENDING_JOB_REASON_APP_STANDBY));
++
++        testClock.advanceTime(10);
++        job.setChargingConstraintSatisfied(testClock.millis(), false);
++        observed[0] = getPendingReasonDuration(job,
++                JobScheduler.PENDING_JOB_REASON_APP_STANDBY);
++
++        testClock.advanceTime(10);
++        job.setBatteryNotLowConstraintSatisfied(testClock.millis(), false);
++        observed[1] = getPendingReasonDuration(job,
++                JobScheduler.PENDING_JOB_REASON_APP_STANDBY);
++
++        testClock.advanceTime(10);
++        job.setChargingConstraintSatisfied(testClock.millis(), true);
++        observed[2] = getPendingReasonDuration(job,
++                JobScheduler.PENDING_JOB_REASON_APP_STANDBY);
++
++        testClock.advanceTime(10);
++        job.setBatteryNotLowConstraintSatisfied(testClock.millis(), true);
++        observed[3] = getPendingReasonDuration(job,
++                JobScheduler.PENDING_JOB_REASON_APP_STANDBY);
++
++        recordPendingReasonObservation(
++                "overlap_charging_first_close", observed[3], 30, 40);
++        // Characterize the implementation without making the derived union oracle the JUnit
++        // pass/fail condition. The host-side verifier compares this emitted value to the oracle.
++        assertArrayEquals(new long[] { 0, 0, 10, 50 }, observed);
++        assertTrue(observed[3] > testClock.millis() - job.enqueueTime);
++    }
++
++    @EnableFlags({
++            android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API
++    })
++    @Test
++    public void testPendingReasonStats_samePublicReasonChargingFirstCloseQueryFreeCharacterization() {
++        final TestClock testClock = new TestClock();
++        JobSchedulerService.sElapsedRealtimeClock = testClock;
++        final JobStatus job = createRestrictedAppStandbyJob(testClock);
++
++        testClock.advanceTime(10);
++        job.setChargingConstraintSatisfied(testClock.millis(), false);
++        testClock.advanceTime(10);
++        job.setBatteryNotLowConstraintSatisfied(testClock.millis(), false);
++        testClock.advanceTime(10);
++        job.setChargingConstraintSatisfied(testClock.millis(), true);
++        testClock.advanceTime(10);
++        job.setBatteryNotLowConstraintSatisfied(testClock.millis(), true);
++
++        final long duration = getPendingReasonDuration(job,
++                JobScheduler.PENDING_JOB_REASON_APP_STANDBY);
++        recordPendingReasonObservation(
++                "overlap_charging_first_close_query_free", duration, 30, 40);
++        assertEquals(50, duration);
++    }
++
++    @EnableFlags({
++            android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API
++    })
++    @Test
++    public void testPendingReasonStats_dynamicMembershipRemovalCharacterization() {
++        final TestClock testClock = new TestClock();
++        JobSchedulerService.sElapsedRealtimeClock = testClock;
++        final JobStatus job = createJobStatus(
++                new JobInfo.Builder(1234, TEST_JOB_COMPONENT).build());
++        job.enqueueTime = testClock.millis();
++        job.setStandbyBucket(RESTRICTED_INDEX, REASON_MAIN_FORCED_BY_SYSTEM);
++        assertFalse(job.areDynamicConstraintsSatisfied());
++        job.setChargingConstraintSatisfied(testClock.millis(), true);
++        job.setBatteryNotLowConstraintSatisfied(testClock.millis(), true);
++        job.setIdleConstraintSatisfied(testClock.millis(), true);
++        assertTrue(job.areDynamicConstraintsSatisfied());
++
++        testClock.advanceTime(10);
++        job.setChargingConstraintSatisfied(testClock.millis(), false);
++        testClock.advanceTime(10);
++        job.setBatteryNotLowConstraintSatisfied(testClock.millis(), false);
++        testClock.advanceTime(5);
++        job.setStandbyBucket(ACTIVE_INDEX, REASON_MAIN_USAGE);
++
++        final ParcelDuration parcelDuration = job.getPendingJobReasonStats().get(
++                String.valueOf(JobScheduler.PENDING_JOB_REASON_APP_STANDBY));
++        final boolean present = parcelDuration != null;
++        final long duration = present ? parcelDuration.getDuration().toMillis() : 0;
++        recordPendingReasonObservation("membership_removal", present, duration, 15, 25);
++        assertTrue(present);
++        assertEquals(0, duration);
++    }
++
++    @EnableFlags({
++            android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API
++    })
++    @Test
++    public void testPendingReasonStats_samePublicReasonBatteryNotLowFirstCloseCharacterization() {
++        final TestClock testClock = new TestClock();
++        JobSchedulerService.sElapsedRealtimeClock = testClock;
++        final JobStatus job = createRestrictedAppStandbyJob(testClock);
++
++        testClock.advanceTime(10);
++        job.setChargingConstraintSatisfied(testClock.millis(), false);
++        testClock.advanceTime(10);
++        job.setBatteryNotLowConstraintSatisfied(testClock.millis(), false);
++        testClock.advanceTime(10);
++        job.setBatteryNotLowConstraintSatisfied(testClock.millis(), true);
++        testClock.advanceTime(10);
++        job.setChargingConstraintSatisfied(testClock.millis(), true);
++
++        final long duration = getPendingReasonDuration(job,
++                JobScheduler.PENDING_JOB_REASON_APP_STANDBY);
++        recordPendingReasonObservation(
++                "overlap_battery_not_low_first_close", duration, 30, 40);
++        assertEquals(50, duration);
++    }
++
++    @EnableFlags({
++            android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API
++    })
++    @Test
++    public void testPendingReasonStats_samePublicReasonNonoverlapControl() {
++        final TestClock testClock = new TestClock();
++        JobSchedulerService.sElapsedRealtimeClock = testClock;
++        final JobStatus job = createRestrictedAppStandbyJob(testClock);
++
++        testClock.advanceTime(10);
++        job.setChargingConstraintSatisfied(testClock.millis(), false);
++        testClock.advanceTime(10);
++        job.setChargingConstraintSatisfied(testClock.millis(), true);
++        testClock.advanceTime(10);
++        job.setBatteryNotLowConstraintSatisfied(testClock.millis(), false);
++        testClock.advanceTime(10);
++        job.setBatteryNotLowConstraintSatisfied(testClock.millis(), true);
++
++        final long duration = getPendingReasonDuration(job,
++                JobScheduler.PENDING_JOB_REASON_APP_STANDBY);
++        recordPendingReasonObservation("nonoverlap_control", duration, 20, 40);
++        assertEquals(20, duration);
++    }
++
++    @EnableFlags({
++            android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API
++    })
++    @Test
++    public void testPendingReasonStats_oneDynamicPredicateControl() {
++        final TestClock testClock = new TestClock();
++        JobSchedulerService.sElapsedRealtimeClock = testClock;
++        final JobStatus job = createRestrictedAppStandbyJob(testClock);
++
++        testClock.advanceTime(10);
++        job.setChargingConstraintSatisfied(testClock.millis(), false);
++        testClock.advanceTime(30);
++        job.setChargingConstraintSatisfied(testClock.millis(), true);
++
++        final long duration = getPendingReasonDuration(job,
++                JobScheduler.PENDING_JOB_REASON_APP_STANDBY);
++        recordPendingReasonObservation("one_predicate_control", duration, 30, 40);
++        assertEquals(30, duration);
++        assertTrue(duration <= testClock.millis() - job.enqueueTime);
++    }
++
++    @EnableFlags({
++            android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API
++    })
++    @Test
++    public void testPendingReasonStats_lateDynamicMembershipCharacterization() {
++        final TestClock testClock = new TestClock();
++        JobSchedulerService.sElapsedRealtimeClock = testClock;
++        final JobStatus job = createJobStatus(
++                new JobInfo.Builder(1234, TEST_JOB_COMPONENT).build());
++        job.enqueueTime = testClock.millis();
++
++        testClock.advanceTime(50);
++        job.setStandbyBucket(RESTRICTED_INDEX, REASON_MAIN_FORCED_BY_SYSTEM);
++        assertFalse(job.areDynamicConstraintsSatisfied());
++        testClock.advanceTime(10);
++
++        final long duration = getPendingReasonDuration(job,
++                JobScheduler.PENDING_JOB_REASON_APP_STANDBY);
++        recordPendingReasonObservation("late_membership", duration, 10, 60);
++        assertEquals(60, duration);
++    }
++
++    @EnableFlags({
++            android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API
++    })
++    @Test
++    public void testPendingReasonStats_periodicRescheduleRolloverCharacterization() {
++        final TestClock testClock = new TestClock();
++        JobSchedulerService.sElapsedRealtimeClock = testClock;
++        final JobStatus job = createRestrictedAppStandbyJob(testClock);
++
++        // One ordinary closed interval on the shared public key: charging goes unsatisfied at
++        // t=10 and satisfied again at t=20, so the accumulator holds exactly 10 ms.
++        testClock.advanceTime(10);
++        job.setChargingConstraintSatisfied(testClock.millis(), false);
++        testClock.advanceTime(10);
++        job.setChargingConstraintSatisfied(testClock.millis(), true);
++        assertEquals(10, getPendingReasonDuration(job,
++                JobScheduler.PENDING_JOB_REASON_APP_STANDBY));
++
++        // The generation boundary a successful periodic execution goes through. The next
++        // generation is built by the production nine-argument reschedule constructor, so the
++        // clone inside that constructor is the code under test; nothing here copies a map.
++        testClock.advanceTime(10);
++        final JobStatus periodic = nextPeriodicGeneration(job, testClock);
++
++        // Characterization of the pinned bytes, not a wish: the next generation has a fresh
++        // origin and no satisfied dynamic bit, and still reports the carried total.
++        assertEquals(testClock.millis(), periodic.enqueueTime);
++        assertFalse(periodic.areDynamicConstraintsSatisfied());
++        assertEquals(10, getPendingReasonDuration(periodic,
++                JobScheduler.PENDING_JOB_REASON_APP_STANDBY));
++    }
++
++    @EnableFlags({
++            android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API
++    })
++    @Test
++    public void testPendingReasonStats_rescheduleWithClosedIntervalsCharacterization() {
++        final TestClock testClock = new TestClock();
++        JobSchedulerService.sElapsedRealtimeClock = testClock;
++        final JobStatus job = createRestrictedAppStandbyJob(testClock);
++
++        // Both focal predicates open and both close before the boundary, so the open-timestamp
++        // map is empty when the next generation is built.
++        testClock.advanceTime(10);
++        job.setChargingConstraintSatisfied(testClock.millis(), false);
++        testClock.advanceTime(10);
++        job.setBatteryNotLowConstraintSatisfied(testClock.millis(), false);
++        testClock.advanceTime(10);
++        job.setChargingConstraintSatisfied(testClock.millis(), true);
++        testClock.advanceTime(10);
++        job.setBatteryNotLowConstraintSatisfied(testClock.millis(), true);
++        assertEquals(50, getPendingReasonDuration(job,
++                JobScheduler.PENDING_JOB_REASON_APP_STANDBY));
++
++        testClock.advanceTime(10);
++        final JobStatus periodic = nextPeriodicGeneration(job, testClock);
++        final long atBoundary = getPendingReasonDuration(periodic,
++                JobScheduler.PENDING_JOB_REASON_APP_STANDBY);
++
++        // With no open interval to extend, the reported total neither clears at the boundary nor
++        // advances afterwards: the query path reports the cloned cumulative while the new
++        // generation ages under its own origin.
++        testClock.advanceTime(20);
++        final long afterAging = getPendingReasonDuration(periodic,
++                JobScheduler.PENDING_JOB_REASON_APP_STANDBY);
++        assertEquals(50, atBoundary);
++        assertEquals(50, afterAging);
++        assertTrue(afterAging > testClock.millis() - periodic.enqueueTime);
++    }
++
++    @EnableFlags({
++            android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API
++    })
++    @Test
++    public void testPendingReasonStats_rescheduleWithOpenIntervalCharacterization() {
++        // Harness-constructible is NOT the same as production-reachable. This scenario
++        // deliberately leaves one open timestamp in the open-timestamp map at the generation
++        // boundary and characterizes what the pinned code computes GIVEN that state. It settles
++        // nothing about whether a real generation boundary can be reached with that map
++        // non-empty; spec task 6.2 owns the production-reachability question, and this scenario
++        // is evidence about the arithmetic only, never about reachability.
++        final TestClock testClock = new TestClock();
++        JobSchedulerService.sElapsedRealtimeClock = testClock;
++        final JobStatus job = createRestrictedAppStandbyJob(testClock);
++
++        // Close one interval so the accumulator holds 10 ms.
++        testClock.advanceTime(10);
++        job.setChargingConstraintSatisfied(testClock.millis(), false);
++        testClock.advanceTime(10);
++        job.setChargingConstraintSatisfied(testClock.millis(), true);
++
++        // Then open a second interval at t=30 and never close it.
++        testClock.advanceTime(10);
++        job.setChargingConstraintSatisfied(testClock.millis(), false);
++
++        testClock.advanceTime(10);
++        final JobStatus periodic = nextPeriodicGeneration(job, testClock);
++        testClock.advanceTime(10);
++        final long reported = getPendingReasonDuration(periodic,
++                JobScheduler.PENDING_JOB_REASON_APP_STANDBY);
++
++        // 10 ms of carried total plus 50 - 30 = 20 ms measured from a timestamp the previous
++        // generation recorded, against an origin the boundary reset to 40.
++        assertEquals(30, reported);
++        assertTrue(reported > testClock.millis() - periodic.enqueueTime);
++    }
++
++    @EnableFlags({
++            android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API
++    })
++    @Test
++    public void testPendingReasonStats_queryPlacementAcrossRescheduleCharacterization() {
++        final TestClock testClock = new TestClock();
++        JobSchedulerService.sElapsedRealtimeClock = testClock;
++        final JobStatus job = createRestrictedAppStandbyJob(testClock);
++
++        testClock.advanceTime(10);
++        job.setChargingConstraintSatisfied(testClock.millis(), false);
++        testClock.advanceTime(10);
++        job.setChargingConstraintSatisfied(testClock.millis(), true);
++
++        // Query placement: once before the boundary on the outgoing generation, once after it on
++        // the incoming one, with the clock advanced in between.
++        testClock.advanceTime(10);
++        final long beforeReschedule = getPendingReasonDuration(job,
++                JobScheduler.PENDING_JOB_REASON_APP_STANDBY);
++        final JobStatus periodic = nextPeriodicGeneration(job, testClock);
++        testClock.advanceTime(10);
++        final long afterReschedule = getPendingReasonDuration(periodic,
++                JobScheduler.PENDING_JOB_REASON_APP_STANDBY);
++
++        assertEquals(10, beforeReschedule);
++        assertEquals(10, afterReschedule);
++        assertEquals(beforeReschedule, afterReschedule);
++    }
++
++    @EnableFlags({
++            android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API
++    })
++    @Test
++    public void testPendingReasonStats_restrictedEntryUnpluggedSingleCreditCharacterization() {
++        final TestClock testClock = new TestClock();
++        JobSchedulerService.sElapsedRealtimeClock = testClock;
++        final JobStatus job = createJobStatus(
++                new JobInfo.Builder(1234, TEST_JOB_COMPONENT).build());
++        job.enqueueTime = testClock.millis();
++
++        testClock.advanceTime(40);
++        // Entry state: no restrictive controller has published to this job yet, so all three
++        // restricted-set bits are clear going in. Which publish below flips a bit is what decides
++        // the multiplier, because setConstraintSatisfied returns early on an unchanged bit and
++        // never reaches the accumulator.
++        assertFalse(job.isConstraintSatisfied(CONSTRAINT_CHARGING));
++        assertFalse(job.isConstraintSatisfied(CONSTRAINT_BATTERY_NOT_LOW));
++        assertFalse(job.isConstraintSatisfied(CONSTRAINT_IDLE));
++        job.setStandbyBucket(RESTRICTED_INDEX, REASON_MAIN_FORCED_BY_SYSTEM);
++        assertFalse(job.areDynamicConstraintsSatisfied());
++
++        // Unplugged, healthy battery, device not idle: idle and charging publish false, which
++        // changes nothing, and only battery-not-low flips. Publication order matches the reverse
++        // controller iteration: idle first, then charging, then battery-not-low.
++        assertFalse(job.setIdleConstraintSatisfied(testClock.millis(), false));
++        assertFalse(job.setChargingConstraintSatisfied(testClock.millis(), false));
++        assertTrue(job.setBatteryNotLowConstraintSatisfied(testClock.millis(), true));
++
++        final long credited = getPendingReasonDuration(job,
++                JobScheduler.PENDING_JOB_REASON_APP_STANDBY);
++        assertEquals(40, credited);
++        assertEquals(testClock.millis() - job.enqueueTime, credited);
++    }
++
++    @EnableFlags({
++            android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API
++    })
++    @Test
++    public void testPendingReasonStats_restrictedEntryPluggedDoubleCreditCharacterization() {
++        final TestClock testClock = new TestClock();
++        JobSchedulerService.sElapsedRealtimeClock = testClock;
++        final JobStatus job = createJobStatus(
++                new JobInfo.Builder(1234, TEST_JOB_COMPONENT).build());
++        job.enqueueTime = testClock.millis();
++
++        testClock.advanceTime(40);
++        assertFalse(job.isConstraintSatisfied(CONSTRAINT_CHARGING));
++        assertFalse(job.isConstraintSatisfied(CONSTRAINT_BATTERY_NOT_LOW));
++        assertFalse(job.isConstraintSatisfied(CONSTRAINT_IDLE));
++        job.setStandbyBucket(RESTRICTED_INDEX, REASON_MAIN_FORCED_BY_SYSTEM);
++        assertFalse(job.areDynamicConstraintsSatisfied());
++
++        // Plugged in with a healthy battery, device not idle: charging and battery-not-low both
++        // flip, idle publishes false and returns early. Two flips, two enqueue-fallback credits.
++        assertFalse(job.setIdleConstraintSatisfied(testClock.millis(), false));
++        assertTrue(job.setChargingConstraintSatisfied(testClock.millis(), true));
++        assertTrue(job.setBatteryNotLowConstraintSatisfied(testClock.millis(), true));
++
++        final long credited = getPendingReasonDuration(job,
++                JobScheduler.PENDING_JOB_REASON_APP_STANDBY);
++        assertEquals(80, credited);
++        assertEquals(2 * (testClock.millis() - job.enqueueTime), credited);
++    }
++
++    @EnableFlags({
++            android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API
++    })
++    @Test
++    public void testPendingReasonStats_restrictedEntryPluggedIdleTripleCreditCharacterization() {
++        final TestClock testClock = new TestClock();
++        JobSchedulerService.sElapsedRealtimeClock = testClock;
++        final JobStatus job = createJobStatus(
++                new JobInfo.Builder(1234, TEST_JOB_COMPONENT).build());
++        job.enqueueTime = testClock.millis();
++
++        testClock.advanceTime(40);
++        assertFalse(job.isConstraintSatisfied(CONSTRAINT_CHARGING));
++        assertFalse(job.isConstraintSatisfied(CONSTRAINT_BATTERY_NOT_LOW));
++        assertFalse(job.isConstraintSatisfied(CONSTRAINT_IDLE));
++        job.setStandbyBucket(RESTRICTED_INDEX, REASON_MAIN_FORCED_BY_SYSTEM);
++        assertFalse(job.areDynamicConstraintsSatisfied());
++
++        // Plugged in with a healthy battery and the device idle: all three bits flip, so the same
++        // job age is credited three times to one public reason in one bucket entry.
++        assertTrue(job.setIdleConstraintSatisfied(testClock.millis(), true));
++        assertTrue(job.setChargingConstraintSatisfied(testClock.millis(), true));
++        assertTrue(job.setBatteryNotLowConstraintSatisfied(testClock.millis(), true));
++        assertTrue(job.areDynamicConstraintsSatisfied());
++
++        final long credited = getPendingReasonDuration(job,
++                JobScheduler.PENDING_JOB_REASON_APP_STANDBY);
++        assertEquals(120, credited);
++        assertEquals(3 * (testClock.millis() - job.enqueueTime), credited);
++    }
++
+ 
+     @DisableFlags({
+             android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API
+@@ -1976,6 +2399,189 @@
+         assertEquals(2000, chargingDuration.getDuration().toMillis());
+     }
+ 
++    /**
++     * A job that *requests* battery-not-low gets its own public reason for that constraint, while
++     * charging and idle still collapse onto APP_STANDBY. Truthfully the requested constraint blocks
++     * the job for longer (25) than App Standby does (15 union, 20 additive), but the shared key
++     * takes the enqueue fallback and reports 40 -- so the reported ranking inverts the true one.
++     * This is the decision the documentation asks developers to make: sort the durations and act on
++     * whichever is largest.
++     */
++    @EnableFlags({
++            android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API
++    })
++    @Test
++    public void testPendingReasonStats_rankingReversalCharacterization() {
++        final TestClock testClock = new TestClock();
++        JobSchedulerService.sElapsedRealtimeClock = testClock;
++        final JobStatus job = createRestrictedJobRequiringBatteryNotLow(testClock);
++
++        // t=5: the requested constraint goes unsatisfied and opens its own dedicated entry.
++        testClock.advanceTime(5);
++        job.setBatteryNotLowConstraintSatisfied(testClock.millis(), false);
++
++        // t=20 and t=25: two conditions that share APP_STANDBY open, the second overwriting the
++        // first's timestamp because one entry serves both.
++        testClock.advanceTime(15);
++        job.setChargingConstraintSatisfied(testClock.millis(), false);
++        testClock.advanceTime(5);
++        job.setIdleConstraintSatisfied(testClock.millis(), false);
++
++        // t=30: charging closes and consumes the shared entry; battery-not-low closes its own.
++        testClock.advanceTime(5);
++        job.setChargingConstraintSatisfied(testClock.millis(), true);
++        job.setBatteryNotLowConstraintSatisfied(testClock.millis(), true);
++
++        // t=35: idle closes, finds nothing stored, and charges the job's whole life again.
++        testClock.advanceTime(5);
++        job.setIdleConstraintSatisfied(testClock.millis(), true);
++
++        final long standby = getPendingReasonDuration(job,
++                JobScheduler.PENDING_JOB_REASON_APP_STANDBY);
++        final long requested = getPendingReasonDuration(job,
++                JobScheduler.PENDING_JOB_REASON_CONSTRAINT_BATTERY_NOT_LOW);
++
++        recordPendingReasonObservation("ranking_reversal_standby", standby, 15, 35);
++        recordPendingReasonObservation("ranking_reversal_requested", requested, 25, 35);
++
++        // The requested constraint is accounted correctly against its own key.
++        assertEquals(25, requested);
++        // The collapsed key reports more than the job's whole life.
++        assertEquals(40, standby);
++        assertTrue(standby > testClock.millis() - job.enqueueTime);
++        // The ranking the documentation asks developers to read is inverted: truthfully the
++        // requested constraint dominates, but the reported totals say otherwise.
++        assertTrue(15 < 25);
++        assertTrue(standby > requested);
++    }
++
++    /**
++     * Same restricted-bucket entry as the shared factory, except the job explicitly requests
++     * battery-not-low, which routes that constraint to its own public reason instead of
++     * APP_STANDBY while charging and idle still collapse.
++     */
++    private static JobStatus createRestrictedJobRequiringBatteryNotLow(TestClock testClock) {
++        final JobStatus job = createJobStatus(
++                new JobInfo.Builder(1234, TEST_JOB_COMPONENT)
++                        .setRequiresBatteryNotLow(true).build());
++        job.enqueueTime = testClock.millis();
++
++        job.setStandbyBucket(RESTRICTED_INDEX, REASON_MAIN_FORCED_BY_SYSTEM);
++        job.setChargingConstraintSatisfied(testClock.millis(), true);
++        job.setBatteryNotLowConstraintSatisfied(testClock.millis(), true);
++        job.setIdleConstraintSatisfied(testClock.millis(), true);
++        assertTrue(job.areDynamicConstraintsSatisfied());
++        return job;
++    }
++
++    /**
++     * Production-reachability of a non-empty open-timestamp map at a generation boundary
++     * (spec task 6.2). Dropping out of the restricted bucket removes the dynamic membership
++     * through the production path while a mapped constraint is still unsatisfied, so nothing ever
++     * closes the open entry -- and the accumulator write set contains no other site that could.
++     * The job is then ready, runs, and rolls over.
++     *
++     * The carried timestamp is observed indirectly, because the map is private: satisfying the
++     * shared constraint in the NEW generation computes 50 - 10 = 40 if the previous generation's
++     * timestamp survived the copy, and 50 - 30 = 20 if it did not. Observing 40 is what makes this
++     * a demonstration rather than a reading.
++     */
++    @EnableFlags({
++            android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API
++    })
++    @Test
++    public void testPendingReasonStats_openIntervalReachesGenerationBoundaryCharacterization() {
++        final TestClock testClock = new TestClock();
++        JobSchedulerService.sElapsedRealtimeClock = testClock;
++        final JobStatus job = createRestrictedAppStandbyJob(testClock);
++
++        // t=10: a mapped constraint goes unsatisfied and opens the shared entry.
++        testClock.advanceTime(10);
++        job.setChargingConstraintSatisfied(testClock.millis(), false);
++
++        // t=20: the app is used again and leaves the restricted bucket. Production removes the
++        // dynamic membership; the open entry is never closed because nothing satisfies it.
++        testClock.advanceTime(10);
++        job.setStandbyBucket(ACTIVE_INDEX, REASON_MAIN_USAGE);
++
++        // t=30: the periodic job rolls over through the production reschedule constructor.
++        testClock.advanceTime(10);
++        final JobStatus periodic = nextPeriodicGeneration(job, testClock);
++        assertEquals(testClock.millis(), periodic.enqueueTime);
++
++        // t=50: satisfy the shared constraint in the new generation. 50 - 10 = 40 means the old
++        // generation's timestamp crossed the boundary and was consumed here; 50 - 30 = 20 would
++        // mean it did not.
++        testClock.advanceTime(20);
++        periodic.setChargingConstraintSatisfied(testClock.millis(), true);
++        final long reported = getPendingReasonDuration(periodic,
++                JobScheduler.PENDING_JOB_REASON_APP_STANDBY);
++
++        assertEquals(40, reported);
++        assertTrue(reported > testClock.millis() - periodic.enqueueTime);
++    }
++
++    private static JobStatus createRestrictedAppStandbyJob(TestClock testClock) {
++        // No explicit constraints: explicit charging and battery-not-low constraints project to
++        // distinct public keys instead of APP_STANDBY.
++        final JobStatus job = createJobStatus(
++                new JobInfo.Builder(1234, TEST_JOB_COMPONENT).build());
++        job.enqueueTime = testClock.millis();
++
++        // Production QuotaController adds RESTRICTED membership before controllers publish their
++        // current truth snapshots. At the same enqueue clock, add membership first and then
++        // establish charging, battery-not-low, and idle as satisfied. This creates a zero-time
++        // shared-key baseline while preserving the production ordering.
++        job.setStandbyBucket(RESTRICTED_INDEX, REASON_MAIN_FORCED_BY_SYSTEM);
++        assertFalse(job.areDynamicConstraintsSatisfied());
++        job.setChargingConstraintSatisfied(testClock.millis(), true);
++        job.setBatteryNotLowConstraintSatisfied(testClock.millis(), true);
++        job.setIdleConstraintSatisfied(testClock.millis(), true);
++        assertTrue(job.areDynamicConstraintsSatisfied());
++        return job;
++    }
++
++    private static long getPendingReasonDuration(JobStatus job,
++            @JobScheduler.PendingJobReason int reason) {
++        final ParcelDuration duration = job.getPendingJobReasonStats().get(
++                String.valueOf(reason));
++        assertNotNull(duration);
++        return duration.getDuration().toMillis();
++    }
++
++    /**
++     * The next generation of a periodic job, built the way production builds it: the periodic
++     * reschedule path passes nine arguments to the reschedule constructor, which is the
++     * constructor that clones both pending-reason accumulators, and startTrackingJobLocked then
++     * resets the per-generation origin. Both steps are production code; no map is copied here.
++     */
++    private static JobStatus nextPeriodicGeneration(JobStatus job, TestClock testClock) {
++        final JobStatus periodic = new JobStatus(job,
++                testClock.millis() + 30_000, testClock.millis() + 60_000,
++                0 /* numFailures */, 0 /* numSystemStops */,
++                0 /* numAbandonedFailures */,
++                JobSchedulerService.sSystemClock.millis() /* lastSuccessfulRunTime */,
++                job.getLastFailedRunTime(),
++                0 /* Reset cumulativeExecutionTime because of successful execution */);
++        periodic.enqueueTime = testClock.millis();
++        return periodic;
++    }
++
++    private static void recordPendingReasonObservation(String scenario, long implementation,
++            long union, long jobAge) {
++        recordPendingReasonObservation(scenario, true, implementation, union, jobAge);
++    }
++
++    private static void recordPendingReasonObservation(String scenario, boolean present,
++            long implementation, long union, long jobAge) {
++        System.out.println("HOTMOBILE_SOURCE_OBSERVATION"
++                + " scenario=" + scenario
++                + " present=" + present
++                + " implementation=" + implementation
++                + " union=" + union
++                + " job_age=" + jobAge);
++    }
++
+     private static class TestClock extends Clock {
+         private long mCurrentTime = 0;
+ 
+-- 
+2.43.0

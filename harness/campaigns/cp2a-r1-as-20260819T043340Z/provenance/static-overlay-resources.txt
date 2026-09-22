@@ -1,0 +1,58 @@
+Binary APK
+Package name=android.auto_generated_rro_vendor__ id=7f
+  type array id=01 entryCount=8
+    resource 0x7f010000 array/config_autoTimeSourcesPriority
+      () (array) size=2
+        ["telephony", "network"]
+    resource 0x7f010001 array/config_device_state_postures
+      () (array) size=4
+        ["0:1", "1:2", "2:3", "3:1"]
+    resource 0x7f010002 array/config_foldedDeviceStates
+      () (array) size=1
+        [0]
+    resource 0x7f010003 array/config_halfFoldedDeviceStates
+      () (array) size=1
+        [1]
+    resource 0x7f010004 array/config_openDeviceStates
+      () (array) size=1
+        [2]
+    resource 0x7f010005 array/config_perDeviceStateRotationLockDefaults
+      () (array) size=3
+        ["0:1", "2:0:1", "1:2"]
+    resource 0x7f010006 array/config_rearDisplayDeviceStates
+      () (array) size=1
+        [3]
+    resource 0x7f010007 array/config_tether_wifi_regexs
+      () (array) size=1
+        ["wlan\d"]
+  type bool id=02 entryCount=11
+    resource 0x7f020000 bool/config_canInternalDisplayHostDesktops
+      () false
+    resource 0x7f020001 bool/config_cellBroadcastAppLinks
+      () true
+    resource 0x7f020002 bool/config_enableAutoPowerModes
+      () true
+    resource 0x7f020003 bool/config_enableMultiUserUI
+      () true
+    resource 0x7f020004 bool/config_isDesktopModeSupported
+      () true
+    resource 0x7f020005 bool/config_lidControlsDisplayFold
+      () true
+    resource 0x7f020006 bool/config_supportMicNearUltrasound
+      () true
+    resource 0x7f020007 bool/config_supportSpeakerNearUltrasound
+      () true
+    resource 0x7f020008 bool/config_supportsCamToggle
+      () true
+    resource 0x7f020009 bool/config_supportsMicToggle
+      () true
+    resource 0x7f02000a bool/config_useDevInputEventForAudioJack
+      () true
+  type integer id=03 entryCount=1
+    resource 0x7f030000 integer/config_multiuserMaximumUsers
+      () 4
+  type string id=04 entryCount=2
+    resource 0x7f040000 string/config_mms_user_agent
+      () "GoldfishNexus"
+    resource 0x7f040001 string/config_mms_user_agent_profile_url
+      () "http://gsm.lge.com/html/gsm/Nexus5-M3.xml"

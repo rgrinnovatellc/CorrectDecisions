@@ -1,0 +1,11 @@
+diff --git a/phone/overlay/frameworks/base/core/res/res/values/lostboundaries_app_standby.xml b/phone/overlay/frameworks/base/core/res/res/values/lostboundaries_app_standby.xml
+new file mode 100644
+index 00000000..0180bf6b
+--- /dev/null
++++ b/phone/overlay/frameworks/base/core/res/res/values/lostboundaries_app_standby.xml
+@@ -0,0 +1,5 @@
++<?xml version="1.0" encoding="utf-8"?>
++<resources>
++    <!-- Enable the platform's automatic power modes on the phone emulator. -->
++    <bool name="config_enableAutoPowerModes">true</bool>
++</resources>

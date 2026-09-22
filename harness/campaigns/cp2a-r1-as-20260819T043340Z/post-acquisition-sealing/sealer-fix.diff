@@ -1,0 +1,19 @@
+--- planned-sealer.py
++++ executed-sealer.py
+@@ -161,6 +161,16 @@
+         shutil.copy2(root / "campaign-plan.json", regenerated_root)
+         shutil.copy2(root / "campaign-result.json", regenerated_root)
+         shutil.copy2(root / "runtime-preflight.json", regenerated_root)
++        regenerated_provenance = regenerated_root / "provenance"
++        regenerated_provenance.mkdir()
++        for name in (
++            "static-overlay-badging.txt",
++            "static-overlay-manifest.txt",
++            "static-overlay-resources.txt",
++            "emu-img-zip-members.sha256",
++            "emu-img-zip-source-bindings.json",
++        ):
++            shutil.copy2(root / "provenance" / name, regenerated_provenance)
+         for record in records:
+             shutil.copy2(record["path"], regenerated_runs / record["path"].name)
+         python = Path(plan["tool_paths"]["python"])

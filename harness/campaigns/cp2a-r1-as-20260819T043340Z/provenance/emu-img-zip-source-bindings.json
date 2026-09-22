@@ -1,0 +1,11 @@
+{
+  "x86_64/VerifiedBootParams.textproto": "VerifiedBootParams.textproto",
+  "x86_64/advancedFeatures.ini": "advancedFeatures.ini",
+  "x86_64/build.prop": "system/build.prop",
+  "x86_64/encryptionkey.img": "encryptionkey.img",
+  "x86_64/kernel-ranchu": "kernel-ranchu",
+  "x86_64/kernel_cmdline.txt": "kernel_cmdline.txt",
+  "x86_64/ramdisk.img": "ramdisk-qemu.img",
+  "x86_64/system.img": "system-qemu.img",
+  "x86_64/vendor.img": "vendor-qemu.img"
+}

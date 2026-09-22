@@ -1,0 +1,97 @@
+{
+  "adb_server": {
+    "executable": "/home/upgautam/Android/Sdk/platform-tools/adb",
+    "listener": "State  Recv-Q Send-Q Local Address:Port Peer Address:PortProcess\nLISTEN 0      128        127.0.0.1:5037      0.0.0.0:*    users:((\"adb\",pid=2956239,fd=12))",
+    "pid": 2956239,
+    "sha256": "00108217733707a40debfc92c86d4232fd6e68870be5966515d74c071193ea90"
+  },
+  "automatic_power_modes": {
+    "adaptive_battery_setting": "null",
+    "app_standby_enabled": "true",
+    "app_standby_setting": "null",
+    "device_idle_enabled_all": "1",
+    "fabricated_shell_overlay_absent": true,
+    "overlay_list": "android\n[x] android.auto_generated_rro_vendor__\n--- android.auto_generated_characteristics_rro\n[x] com.android.internal.ranchu.commonoverlay\n[ ] com.android.internal.display.cutout.emulation.corner\n[ ] com.android.internal.display.cutout.emulation.double\n[ ] com.android.internal.emulation.pixel_3a_xl\n[ ] com.android.internal.emulation.pixel_6_pro\n[ ] com.android.internal.emulation.pixel_7_pro\n[ ] com.android.internal.emulation.pixel_8_pro\n[ ] com.android.internal.emulation.pixel_3a\n[ ] com.android.internal.emulation.pixel_4a\n[ ] com.android.internal.emulation.pixel_6a\n[ ] com.android.internal.emulation.pixel_7a\n[ ] com.android.internal.emulation.pixel_8a\n[ ] com.android.internal.display.cutout.emulation.hole\n[ ] com.android.internal.display.cutout.emulation.tall\n[ ] com.android.internal.systemui.navbar.threebutton\n[ ] com.android.internal.systemui.navbar.twobutton\n[ ] com.android.internal.emulation.pixel_3\n[ ] com.android.internal.emulation.pixel_4\n[ ] com.android.internal.emulation.pixel_5\n[ ] com.android.internal.emulation.pixel_6\n[ ] com.android.internal.emulation.pixel_7\n[ ] com.android.internal.emulation.pixel_8\n[ ] com.android.internal.display.cutout.emulation.emu01\n[ ] com.android.theme.font.notoserifsource\n[ ] com.android.internal.display.cutout.emulation.waterfall\n[ ] com.android.internal.systemui.navbar.transparent\n[ ] com.android.role.notes.enabled\n[ ] com.android.internal.emulation.pixel_2_xl\n[ ] com.android.internal.emulation.pixel_3_xl\n[ ] com.android.internal.emulation.pixel_4_xl\n[ ] com.android.internal.emulation.pixel_fold\n[ ] com.android.internal.systemui.navbar.gestural\n[x] com.android.systemui:neutral\n[x] com.android.systemui:accent\n[x] com.android.systemui:dynamic",
+    "resource_value": "true",
+    "static_overlay_enabled": true,
+    "valid": true
+  },
+  "battery_input_suspended": "",
+  "battery_override_absent": true,
+  "boot_id": "fa884bc6-f149-4d23-889a-2e44cb175e92",
+  "campaign_id": "cp2a-r1-as-20260819T043340Z",
+  "campaign_plan_sha256": "582ae8927a78e2d5e77b7cb15c7fc623e110bf705a0304f8cb4169e0906b77de",
+  "completed_utc": "2026-08-19T04:34:25.936791Z",
+  "controller_commands": {
+    "battery_charging": "true",
+    "battery_not_low": "true"
+  },
+  "device_properties": {
+    "ro.build.fingerprint": "Android/sdk_phone64_x86_64/emu64x:17/CP2A.260605.016/lostboundaries-r1-as:userdebug/test-keys",
+    "ro.build.id": "CP2A.260605.016",
+    "ro.build.tags": "test-keys",
+    "ro.build.type": "userdebug",
+    "ro.build.user": "lostboundaries",
+    "ro.build.version.codename": "REL",
+    "ro.build.version.incremental": "lostboundaries-r1-as",
+    "ro.build.version.preview_sdk": "0",
+    "ro.build.version.release": "17",
+    "ro.build.version.sdk": "37",
+    "ro.build.version.security_patch": "2026-06-05",
+    "ro.product.name": "sdk_phone64_x86_64",
+    "sys.boot_completed": "1"
+  },
+  "emulator_launcher_sha256": "82e008db27b8011347c3062e7ae3f64841f36897334936f6de9c89fef58a6107",
+  "emulator_pid": 2956270,
+  "emulator_process": {
+    "arguments": [
+      "/home/upgautam/CLionProjects/aosp-android17/prebuilts/android-emulator/linux-x86_64/qemu/linux-x86_64/qemu-system-x86_64-headless",
+      "-port",
+      "5584",
+      "-kernel",
+      "/home/upgautam/CLionProjects/aosp-android17/out-cp2a-appstandby/target/product/emu64x/kernel-ranchu",
+      "-datadir",
+      "/tmp/lostboundaries-cp2a-r1-as-20260819T043340Z",
+      "-data",
+      "/tmp/lostboundaries-cp2a-r1-as-20260819T043340Z/userdata-qemu.img",
+      "-initdata",
+      "/home/upgautam/CLionProjects/aosp-android17/out-cp2a-appstandby/target/product/emu64x/userdata.img",
+      "-wipe-data",
+      "-no-cache",
+      "-no-metrics",
+      "-no-window",
+      "-no-audio",
+      "-no-boot-anim",
+      "-no-snapshot",
+      "-read-only",
+      "-gpu",
+      "swiftshader_indirect"
+    ],
+    "cmdline_sha256": "dc670b24787e6991fa5b3a1bddc7c9539627e2c622bb2988405f96ccb566e065",
+    "executable": "/home/upgautam/CLionProjects/aosp-android17/prebuilts/android-emulator/linux-x86_64/qemu/linux-x86_64/qemu-system-x86_64-headless",
+    "executable_sha256": "2de51b9611867a4031731402c1257d8ee72737da542d765bf62d78a67c92f18f",
+    "pid": 2956270,
+    "start_time_ticks": 14135818
+  },
+  "initial_adb_server": {
+    "executable": "/home/upgautam/Android/Sdk/platform-tools/adb",
+    "listener": "State  Recv-Q Send-Q Local Address:Port Peer Address:PortProcess\nLISTEN 0      128        127.0.0.1:5037      0.0.0.0:*    users:((\"adb\",pid=2956239,fd=12))",
+    "pid": 2956239,
+    "sha256": "00108217733707a40debfc92c86d4232fd6e68870be5966515d74c071193ea90",
+    "version": "Android Debug Bridge version 1.0.41\nVersion 37.0.0-14910828\nInstalled as /home/upgautam/Android/Sdk/platform-tools/adb\nRunning on Linux 7.0.0-28-generic (x86_64)"
+  },
+  "probe_package_absent": true,
+  "runtime_api_flag_lines": [
+    "android.app.job.get_pending_job_reason_stats_api=true"
+  ],
+  "runtime_artifact_sha256": {
+    "/apex/com.android.scheduling/javalib/framework-scheduling.jar": "fb41e2c8524f39c02cba394f5455f1a9b7088bcceb192d2b376fc7a22606ed8a",
+    "/apex/com.android.scheduling/javalib/service-scheduling.jar": "3dce5a62765f6be9491ddabff52e43e22b4aca60707f8957bc1f56c9b5991d4d",
+    "/system/framework/framework-res.apk": "297b1f5c3c4e3f2d4289c4bf247311e18046a14af14d988f667703a2b42cc1bb",
+    "/system/framework/framework.jar": "d1d2e1730d76237d90cc1a92f2756974f17e5c2a316571665ad2255b17a60504",
+    "/system/framework/services.jar": "b7bb8885f3c98c40bca93e057e309189a06f7274155e348526c3ee3d19b94874",
+    "/vendor/overlay/framework-res__sdk_phone64_x86_64__auto_generated_rro_vendor.apk": "84187e1715a384b723619c0b8317c447820ebf8ec6d4c2fda3ead259ed7886e8"
+  },
+  "schema": 1,
+  "user_state": "RUNNING_UNLOCKED"
+}

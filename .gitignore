@@ -1,0 +1,13 @@
+# Editor and Python-local state.
+/.idea/
+/.vscode/
+.gradle/
+**/probe-app/**/build/
+**/probe-app/local.properties
+/build/.latex-cache/
+*.iml
+__pycache__/
+*.py[cod]
+
+# Local API keys — never commit.
+.secrets

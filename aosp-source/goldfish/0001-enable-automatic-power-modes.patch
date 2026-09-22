@@ -1,0 +1,25 @@
+From 9e403c2080309c4c549dfd0dad19bfbb17b32afc Mon Sep 17 00:00:00 2001
+From: rgrinnovatellc <upgautam@vt.edu>
+Date: Tue, 18 Aug 2026 22:39:43 -0400
+Subject: [PATCH] goldfish: enable automatic power modes on phone emulator
+
+Change-Id: I435e429341225b03f6429f0ef58b7afb5ba21938
+---
+ .../base/core/res/res/values/lostboundaries_app_standby.xml  | 5 +++++
+ 1 file changed, 5 insertions(+)
+ create mode 100644 phone/overlay/frameworks/base/core/res/res/values/lostboundaries_app_standby.xml
+
+diff --git a/phone/overlay/frameworks/base/core/res/res/values/lostboundaries_app_standby.xml b/phone/overlay/frameworks/base/core/res/res/values/lostboundaries_app_standby.xml
+new file mode 100644
+index 00000000..0180bf6b
+--- /dev/null
++++ b/phone/overlay/frameworks/base/core/res/res/values/lostboundaries_app_standby.xml
+@@ -0,0 +1,5 @@
++<?xml version="1.0" encoding="utf-8"?>
++<resources>
++    <!-- Enable the platform's automatic power modes on the phone emulator. -->
++    <bool name="config_enableAutoPowerModes">true</bool>
++</resources>
+-- 
+2.43.0
+

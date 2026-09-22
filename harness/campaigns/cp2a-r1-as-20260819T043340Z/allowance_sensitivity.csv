@@ -1,0 +1,5 @@
+endpoint_allowance_ms,decision_margin_ms,protocol_qualified_records,records_passing_recomputed_timing_checks,records_with_all_claim_bearing_gaps,minimum_claim_bearing_gap_ms,minimum_gap_beyond_margin_ms,limiting_comparison,limiting_evidence_number,minimum_app_standby_minus_age_upper_ms,minimum_app_standby_minus_minimum_latency_ms,minimum_age_lower_minus_union_upper_ms,minimum_age_lower_minus_additive_upper_ms
+20,500,30,30,30,14400,13900,age_lower_minus_additive_upper,1,14848,14985,30000,14400
+100,500,30,30,30,13920,13420,age_lower_minus_additive_upper,1,14688,14985,29680,13920
+500,500,30,30,30,11520,11020,age_lower_minus_additive_upper,1,13888,14985,28080,11520
+1000,500,30,30,30,8520,8020,age_lower_minus_additive_upper,1,12888,14985,26080,8520

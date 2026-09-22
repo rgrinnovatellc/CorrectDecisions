@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "campaign_id": "cp2a-r1-as-20260819T043340Z",
+  "created_utc": "2026-08-19T05:13:40Z",
+  "campaign_plan_sha256": "582ae8927a78e2d5e77b7cb15c7fc623e110bf705a0304f8cb4169e0906b77de",
+  "campaign_result_sha256": "ad74c2bd0955b409e895b74b0423bb3efea7b316ab50f63c92acf98d7416bdfe",
+  "campaign_finished_utc": "2026-08-19T05:05:24.119068Z",
+  "emulator_stop_record_sha256": "51b350aa8aa5ca2ba242f0938ffbcc9ac36ed11d75cc500c8eb110e9c753fe30",
+  "emulator_stopped_utc": "2026-08-19T05:05:33.855838Z",
+  "planned_sealer": {
+    "path": "harness/seal_campaign.py",
+    "sha256": "98e24c955e9ed3f39336d4516223b71f9666267d81c16966f2898c7ef4f0949c",
+    "exit_code": 2,
+    "observed_error": "cannot regenerate derived evidence: error: static-overlay provenance dumps do not match the plan"
+  },
+  "executed_sealer": {
+    "archive_path": "post-acquisition-sealing/executed-sealer.py",
+    "sha256": "f6d35b175be861ff092ee4287120403059fcfff46fbf9e0761dadf1f9e88b597"
+  },
+  "pre_amendment_manifest": {
+    "path": "post-acquisition-sealing/PRE_AMENDMENT_SHA256SUMS",
+    "sha256": "622f9db20b329b65f7cb3995353cb98442ebfe52743935e296eff95fa0d42e3f",
+    "file_count": 84
+  },
+  "cause": "The planned sealer omitted five already plan-bound provenance files from only its temporary regeneration tree.",
+  "repair_scope": "The corrective sealer copies those five immutable files into the temporary tree before invoking the unchanged pinned derivation tools.",
+  "acquisition_impact": "None. The campaign plan, result, runtime records, all 31 attempt records, derived outputs, and every plan-pinned tool remained byte-identical through acquisition and this amendment."
+}

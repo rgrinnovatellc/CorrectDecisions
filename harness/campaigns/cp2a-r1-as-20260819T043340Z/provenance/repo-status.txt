@@ -1,0 +1,2 @@
+project device/generic/goldfish/                branch hotmobile-app-standby
+project frameworks/base/                        branch hotmobile-public-r1

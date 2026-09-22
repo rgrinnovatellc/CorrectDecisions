@@ -1,0 +1,9 @@
+commit 9e403c2080309c4c549dfd0dad19bfbb17b32afc
+Author:     rgrinnovatellc <upgautam@vt.edu>
+AuthorDate: Tue Aug 18 22:39:43 2026 -0400
+Commit:     rgrinnovatellc <upgautam@vt.edu>
+CommitDate: Tue Aug 18 22:43:15 2026 -0400
+
+    goldfish: enable automatic power modes on phone emulator
+    
+    Change-Id: I435e429341225b03f6429f0ef58b7afb5ba21938

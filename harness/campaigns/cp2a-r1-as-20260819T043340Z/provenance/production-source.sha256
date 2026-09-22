@@ -1,0 +1,4 @@
+9c122ee09fcab444048023ab9a6b3e7ef37c4635c5a0c059739c2e944800383e  apex/jobscheduler/framework/java/android/app/JobSchedulerImpl.java
+2344762463a3162caa09f6e005ae830b3b1813e402758aee7988488f05d60a35  apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java
+8766a1113f88fbb71c6652308c55a04db686f183440aaff962119199d918b1d6  apex/jobscheduler/service/java/com/android/server/job/controllers/BatteryController.java
+2a8fbe2a30f1967d677ebc9303446bd6833cb280bab11f3190a2bdb87450e7ba  apex/jobscheduler/service/java/com/android/server/job/controllers/JobStatus.java

@@ -1,0 +1,165 @@
+diff --git a/services/tests/mockingservicestests/src/com/android/server/job/controllers/JobStatusTest.java b/services/tests/mockingservicestests/src/com/android/server/job/controllers/JobStatusTest.java
+index 2d000380339f..3a151094ee8e 100644
+--- a/services/tests/mockingservicestests/src/com/android/server/job/controllers/JobStatusTest.java
++++ b/services/tests/mockingservicestests/src/com/android/server/job/controllers/JobStatusTest.java
+@@ -1749,6 +1749,84 @@ public class JobStatusTest {
+         assertEquals(3000, batteryNotLowDuration.getDuration().toMillis());
+     }
+ 
++    // The shared-reason mapping and duration updater are independent of the enhanced-reasons flag.
++    @Test
++    public void
++            testPendingReasonStats_samePublicReasonDurationDecreasesWithoutResetCharacterization() {
++        final TestClock testClock = new TestClock();
++        JobSchedulerService.sElapsedRealtimeClock = testClock;
++        final JobStatus queriedJob = createRestrictedAppStandbyJobForMonotonicity(testClock);
++        final JobStatus noT19StatsQueryControl =
++                createRestrictedAppStandbyJobForMonotonicity(testClock);
++        final int jobId = queriedJob.getJobId();
++        final long enqueueTime = queriedJob.enqueueTime;
++        final int controlJobId = noT19StatsQueryControl.getJobId();
++        final long controlEnqueueTime = noT19StatsQueryControl.enqueueTime;
++        final String appStandbyKey = String.valueOf(JobScheduler.PENDING_JOB_REASON_APP_STANDBY);
++
++        // The query path treats an absent total differently from a present zero total, so verify
++        // the reachable initialization state explicitly rather than defaulting absence to zero.
++        final Map<String, ParcelDuration> initialStats = queriedJob.getPendingJobReasonStats();
++        assertTrue(initialStats.containsKey(appStandbyKey));
++        assertEquals(0, initialStats.get(appStandbyKey).getDuration().toMillis());
++        final Map<String, ParcelDuration> controlInitialStats =
++                noT19StatsQueryControl.getPendingJobReasonStats();
++        assertTrue(controlInitialStats.containsKey(appStandbyKey));
++        assertEquals(0, controlInitialStats.get(appStandbyKey).getDuration().toMillis());
++
++        // t=10: charging becomes unsatisfied and opens the shared APP_STANDBY boundary.
++        testClock.advanceTime(10);
++        assertTrue(queriedJob.setChargingConstraintSatisfied(testClock.millis(), false));
++        assertTrue(
++                noT19StatsQueryControl.setChargingConstraintSatisfied(testClock.millis(), false));
++
++        // t=19: the same ineligible JobStatus still has stable Restricted membership and a current
++        // APP_STANDBY reason. Its lifetime total is observed as nine time units.
++        testClock.advanceTime(9);
++        assertMonotonicityTracePremises(queriedJob, jobId, enqueueTime, false, true, true);
++        assertMonotonicityTracePremises(
++                noT19StatsQueryControl, controlJobId, controlEnqueueTime, false, true, true);
++        final long earlier =
++                getPendingReasonDurationForMonotonicity(
++                        queriedJob, JobScheduler.PENDING_JOB_REASON_APP_STANDBY);
++        assertEquals(9, earlier);
++
++        // t=20, before the overwrite: the t=19 query has not changed the saved accounting state.
++        testClock.advanceTime(1);
++        final long queriedBeforeOverwrite =
++                getPendingReasonDurationForMonotonicity(
++                        queriedJob, JobScheduler.PENDING_JOB_REASON_APP_STANDBY);
++        final long controlBeforeOverwrite =
++                getPendingReasonDurationForMonotonicity(
++                        noT19StatsQueryControl, JobScheduler.PENDING_JOB_REASON_APP_STANDBY);
++        assertEquals(10, queriedBeforeOverwrite);
++        assertEquals(10, controlBeforeOverwrite);
++        assertEquals(controlBeforeOverwrite, queriedBeforeOverwrite);
++
++        // t=20: battery-not-low becomes unsatisfied and overwrites charging's shared boundary.
++        assertTrue(queriedJob.setBatteryNotLowConstraintSatisfied(testClock.millis(), false));
++        assertTrue(
++                noT19StatsQueryControl.setBatteryNotLowConstraintSatisfied(
++                        testClock.millis(), false));
++
++        // t=21: APP_STANDBY remains current, but the reported lifetime total drops from 9 to 1.
++        testClock.advanceTime(1);
++        assertMonotonicityTracePremises(queriedJob, jobId, enqueueTime, false, false, true);
++        assertMonotonicityTracePremises(
++                noT19StatsQueryControl, controlJobId, controlEnqueueTime, false, false, true);
++        final long later =
++                getPendingReasonDurationForMonotonicity(
++                        queriedJob, JobScheduler.PENDING_JOB_REASON_APP_STANDBY);
++        final long noT19StatsQueryLater =
++                getPendingReasonDurationForMonotonicity(
++                        noT19StatsQueryControl, JobScheduler.PENDING_JOB_REASON_APP_STANDBY);
++        assertEquals(1, later);
++        assertEquals(1, noT19StatsQueryLater);
++        // Both jobs received identical t=0/t=20 stats reads and transitions; only queriedJob
++        // received the duration-stats query at t=19.
++        assertEquals(noT19StatsQueryLater, later);
++        assertTrue("a cumulative lifetime total decreased without a reset", later < earlier);
++    }
+ 
+     @DisableFlags({
+             android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API
+@@ -1976,6 +2054,75 @@ public class JobStatusTest {
+         assertEquals(2000, chargingDuration.getDuration().toMillis());
+     }
+ 
++    private static JobStatus createRestrictedAppStandbyJobForMonotonicity(TestClock testClock) {
++        final JobStatus job =
++                createJobStatus(new JobInfo.Builder(1234, TEST_JOB_COMPONENT).build());
++        job.enqueueTime = testClock.millis();
++        job.setStandbyBucket(RESTRICTED_INDEX, REASON_MAIN_FORCED_BY_SYSTEM);
++        assertFalse(job.areDynamicConstraintsSatisfied());
++
++        // These real false-to-true transitions create a present, zero-valued APP_STANDBY total
++        // through the production updater at the enqueue clock.
++        assertTrue(job.setChargingConstraintSatisfied(testClock.millis(), true));
++        assertTrue(job.setBatteryNotLowConstraintSatisfied(testClock.millis(), true));
++        assertTrue(job.setIdleConstraintSatisfied(testClock.millis(), true));
++        assertTrue(job.areDynamicConstraintsSatisfied());
++        return job;
++    }
++
++    private static void assertMonotonicityTracePremises(
++            JobStatus job,
++            int expectedJobId,
++            long expectedEnqueueTime,
++            boolean chargingSatisfied,
++            boolean batteryNotLowSatisfied,
++            boolean idleSatisfied) {
++        assertEquals(expectedJobId, job.getJobId());
++        assertEquals(expectedEnqueueTime, job.enqueueTime);
++        assertEquals(RESTRICTED_INDEX, job.getStandbyBucket());
++        assertEquals(REASON_MAIN_FORCED_BY_SYSTEM, job.getStandbyBucketReason());
++
++        // None of the focal constraints was requested by the app; their unchanged membership is
++        // therefore the dynamic membership supplied by the Restricted standby bucket.
++        assertFalse(job.getJob().isRequireCharging());
++        assertFalse(job.getJob().isRequireBatteryNotLow());
++        assertFalse(job.getJob().isRequireDeviceIdle());
++        assertTrue(job.hasChargingConstraint());
++        assertTrue(job.hasBatteryNotLowConstraint());
++        assertTrue(job.hasIdleConstraint());
++        assertFocalConstraintStates(job, chargingSatisfied, batteryNotLowSatisfied, idleSatisfied);
++        assertFalse(job.areDynamicConstraintsSatisfied());
++        // This component fixture is not registered in JobStore; this proves ineligibility only.
++        assertFalse(job.isReady());
++
++        assertCurrentAppStandbyReason(job);
++    }
++
++    private static void assertCurrentAppStandbyReason(JobStatus job) {
++        final long appStandbyOccurrences =
++                Arrays.stream(job.getPendingJobReasons(null))
++                        .filter(reason -> reason == JobScheduler.PENDING_JOB_REASON_APP_STANDBY)
++                        .count();
++        assertEquals(1, appStandbyOccurrences);
++    }
++
++    private static void assertFocalConstraintStates(
++            JobStatus job,
++            boolean chargingSatisfied,
++            boolean batteryNotLowSatisfied,
++            boolean idleSatisfied) {
++        assertEquals(chargingSatisfied, job.isConstraintSatisfied(CONSTRAINT_CHARGING));
++        assertEquals(batteryNotLowSatisfied, job.isConstraintSatisfied(CONSTRAINT_BATTERY_NOT_LOW));
++        assertEquals(idleSatisfied, job.isConstraintSatisfied(CONSTRAINT_IDLE));
++    }
++
++    private static long getPendingReasonDurationForMonotonicity(
++            JobStatus job, @JobScheduler.PendingJobReason int reason) {
++        final ParcelDuration duration = job.getPendingJobReasonStats().get(String.valueOf(reason));
++        assertNotNull(duration);
++        return duration.getDuration().toMillis();
++    }
++
+     private static class TestClock extends Clock {
+         private long mCurrentTime = 0;
+ 

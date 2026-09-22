@@ -1,0 +1,8 @@
+cff-version: 1.2.0
+message: "If you use this artifact, please cite the accompanying article and the archived artifact release."
+title: "Correct Decisions, Incorrect Diagnostic Reports — Android 17 JobScheduler shared-label duration accounting artifact"
+type: dataset
+authors:
+  - family-names: Gautam
+    given-names: Uddhav P.
+    email: upgautam@vt.edu

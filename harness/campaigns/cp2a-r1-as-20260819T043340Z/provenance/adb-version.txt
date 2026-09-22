@@ -1,0 +1,4 @@
+Android Debug Bridge version 1.0.41
+Version 37.0.0-14910828
+Installed as /home/upgautam/Android/Sdk/platform-tools/adb
+Running on Linux 7.0.0-28-generic (x86_64)
